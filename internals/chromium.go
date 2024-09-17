@@ -14,6 +14,6 @@ func getChromiumBasePath(browser string) (string, error) {
 	if ok {
 		return path, nil
 	} else {
-		return string(""), errors.New("Not Found")
+		return string(""), errors.New("[!] Not Found")
 	}
 }
