@@ -34,10 +34,16 @@ func runChrome() {
 		panic(err)
 	}
 
-	_, err = chrome.DumpCredentials()
+	profileCredentials, err := chrome.DumpCredentials()
 	if err != nil {
 		fmt.Printf("[!] %s\n", err)
 	}
+	for _, credentialsList := range profileCredentials {
+		for _, cred := range credentialsList {
+			cred.PrintCredentials()
+		}
+	}
+
 	/*
 		_, err = chrome.DumpCookies()
 		if err != nil {
@@ -52,9 +58,14 @@ func runBrave() {
 		panic(err)
 	}
 
-	_, err = brave.DumpCredentials()
+	profileCredentials, err := brave.DumpCredentials()
 	if err != nil {
 		fmt.Printf("[!] %s\n", err)
+	}
+	for _, credentialsList := range profileCredentials {
+		for _, cred := range credentialsList {
+			cred.PrintCredentials()
+		}
 	}
 }
 
@@ -66,6 +77,8 @@ func main() {
 		`,
 	)
 	flag.Parse()
+
+	fmt.Printf("Test: %s\n", "\033[1mhi \033[0m")
 
 	targets := make([]string, 0)
 	if *targetPtr == "all" {

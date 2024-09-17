@@ -1,6 +1,7 @@
 package internals
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 )
@@ -23,8 +24,17 @@ type Browser interface {
 }
 
 type Credentials struct {
-	loginUrl *url.URL
-	username string
-	password []byte
+	LoginUrl *url.URL
+	Username string
+	Password []byte
 	// Add date to order
+}
+
+const (
+	BOLD_START = "\033[1m"
+	BOLD_END   = "\033[0m"
+)
+
+func (c Credentials) PrintCredentials() {
+	fmt.Printf("%s%s %s \n%s:%s\n", BOLD_START, c.LoginUrl, BOLD_END, c.Username, string(c.Password))
 }
