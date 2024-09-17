@@ -195,6 +195,9 @@ func getChromeCredentials(path string) ([]Credentials, error) {
 		if loginUrlStr == "" || user == "" || pass == nil {
 			continue
 		}
+		if strings.HasPrefix(loginUrlStr, "android") {
+			loginUrlStr = strings.Split(loginUrlStr, "==@")[1]
+		}
 
 		loginUrl, err := url.Parse(loginUrlStr)
 		if err != nil {
