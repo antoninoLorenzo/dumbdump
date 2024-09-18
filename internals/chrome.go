@@ -4,8 +4,6 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"database/sql"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -36,7 +34,7 @@ func NewChrome() (Chrome, error) {
 		return Chrome{name, basePath, nil, nil}, err
 	}
 
-	decKey, err := getChromeDecryptionKey(basePath)
+	decKey, err := getChromiumDecryptionKey(fmt.Sprintf("%s\\%s", basePath, "Local State"))
 	if err != nil {
 		return Chrome{name, basePath, nil, nil}, err
 	}
@@ -134,35 +132,6 @@ func getChromeProfiles(basePath string) ([]string, error) {
 	} else {
 		return profilePaths, errors.New("[!] Local State not found")
 	}
-}
-
-// TODO: refactor, is the same for brave
-func getChromeDecryptionKey(basePath string) ([]byte, error) {
-	stateFile, err := os.ReadFile(fmt.Sprintf("%s\\%s", basePath, "Local State"))
-	if err != nil {
-		return nil, err
-	}
-	var data struct {
-		OsCrypt struct {
-			EncryptedKey string `json:"encrypted_key"`
-		} `json:"os_crypt"`
-	}
-	err = json.Unmarshal(stateFile, &data)
-	if err != nil {
-		return nil, err
-	}
-	keyEnc, err := base64.StdEncoding.DecodeString(data.OsCrypt.EncryptedKey)
-	if err != nil {
-		return nil, err
-	}
-
-	// Decrypt the private key
-	// Note: the first 5 bytes correspond to "DPAPI" (check with xxd)
-	key, err := DecryptKey(keyEnc[5:])
-	if err != nil {
-		return nil, err
-	}
-	return key, nil
 }
 
 func getChromeCookies(path string) ([]http.Cookie, error) {

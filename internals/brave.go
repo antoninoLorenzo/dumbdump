@@ -3,8 +3,6 @@ package internals
 import (
 	"crypto/aes"
 	"crypto/cipher"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -27,7 +25,7 @@ func NewBrave() (Brave, error) {
 		basePath = homeDir + basePath
 	}
 
-	decKey, err := getBraveDecryptionKey(basePath)
+	decKey, err := getChromiumDecryptionKey(fmt.Sprintf("%s\\%s", basePath, "Local State"))
 	if err != nil {
 		return Brave{name, basePath, nil}, err
 	}
@@ -76,33 +74,4 @@ func (b Brave) DecryptPassword(psw *[]byte) {
 
 	plain, err := aesgcm.Open(nil, iv, ps, nil)
 	*psw = plain
-}
-
-// TODO: refactor, is the same for chrome
-func getBraveDecryptionKey(basePath string) ([]byte, error) {
-	stateFile, err := os.ReadFile(fmt.Sprintf("%s\\%s", basePath, "Local State"))
-	if err != nil {
-		return nil, err
-	}
-	var data struct {
-		OsCrypt struct {
-			EncryptedKey string `json:"encrypted_key"`
-		} `json:"os_crypt"`
-	}
-	err = json.Unmarshal(stateFile, &data)
-	if err != nil {
-		return nil, err
-	}
-	keyEnc, err := base64.StdEncoding.DecodeString(data.OsCrypt.EncryptedKey)
-	if err != nil {
-		return nil, err
-	}
-
-	// Decrypt the private key
-	// Note: the first 5 bytes correspond to "DPAPI" (check with xxd)
-	key, err := DecryptKey(keyEnc[5:])
-	if err != nil {
-		return nil, err
-	}
-	return key, nil
 }
