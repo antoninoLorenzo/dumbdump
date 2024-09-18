@@ -3,12 +3,10 @@ package internals
 import (
 	"crypto/aes"
 	"crypto/cipher"
-	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
 	"os"
 )
 
@@ -43,7 +41,7 @@ func (b Brave) DumpCredentials() ([][]Credentials, error) {
 
 	// Brave uses only one profile
 	dump := make([][]Credentials, 1)
-	credentials, err := getBraveCredentials(fmt.Sprintf("%s\\%s", b.basePath, "Default\\Login Data"))
+	credentials, err := getChromiumCredentials(fmt.Sprintf("%s\\%s", b.basePath, "Default\\Login Data"))
 	if err != nil {
 		return nil, err
 	}
@@ -107,45 +105,4 @@ func getBraveDecryptionKey(basePath string) ([]byte, error) {
 		return nil, err
 	}
 	return key, nil
-}
-
-// TODO: refactor, is the same for chrome
-
-func getBraveCredentials(path string) ([]Credentials, error) {
-	credentials := make([]Credentials, 0)
-	db, err := sql.Open("sqlite3", path)
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
-
-	selectStatement := "SELECT origin_url, username_value, password_value FROM logins"
-	rows, err := db.Query(selectStatement)
-	if err != nil {
-		return credentials, errors.New(fmt.Sprintf("%s: %s\n", "Brave Running", err.Error()))
-	}
-
-	defer rows.Close()
-	for rows.Next() {
-		var (
-			loginUrlStr, user string
-			pass              []byte
-		)
-		err = rows.Scan(&loginUrlStr, &user, &pass)
-		if err != nil {
-			return credentials, err
-		}
-
-		if loginUrlStr == "" || user == "" || pass == nil {
-			continue
-		}
-
-		loginUrl, err := url.Parse(loginUrlStr)
-		if err != nil {
-			fmt.Printf("Error parsing %s: %s\n", loginUrlStr, err.Error())
-		}
-		credentials = append(credentials, Credentials{loginUrl, user, pass})
-	}
-
-	return credentials, nil
 }
