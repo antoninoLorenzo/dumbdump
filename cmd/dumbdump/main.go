@@ -14,8 +14,9 @@ import (
 type Runner func()
 
 var Runners = map[string]Runner{
-	"chrome": runChrome,
-	"brave":  runBrave,
+	"chrome":  runChrome,
+	"brave":   runBrave,
+	"firefox": runFirefox,
 }
 
 func Run(targets []string) {
@@ -66,6 +67,13 @@ func runBrave() {
 		for _, cred := range credentialsList {
 			cred.PrintCredentials()
 		}
+	}
+}
+
+func runFirefox() {
+	_, err := internals.NewFirefox()
+	if err != nil {
+		panic(err)
 	}
 }
 
