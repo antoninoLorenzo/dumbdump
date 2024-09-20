@@ -7,8 +7,6 @@ import (
 )
 
 type Browser interface {
-	New() (Browser, error)
-
 	Name()
 
 	// Returns [][]Credentials -> Credentials for each Profile
